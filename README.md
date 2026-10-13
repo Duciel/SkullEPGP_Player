@@ -1,6 +1,19 @@
 # Skull EPGP Player (WoW 1.12)
 
-Light addon for raiders. It works together with **SkullEPGP_Officer** (used by the master looter / raid leader).
+Light addon for **raiders** of a guild using the EPGP loot system. It works together with
+**[SkullEPGP_Officer](https://github.com/Duciel/SkullEPGP_Officer)**, used by the master looter / raid leader.
+Nothing to configure: install it, and a small window pops up each time an item is announced.
+
+<!-- Screenshots: put the PNG files in docs/images/ and uncomment the lines below
+![Bidding window](docs/images/bidding-window.png)
+![Winner announced](docs/images/winner.png)
+-->
+
+## Quick start
+1. Copy the folder into `Interface/AddOns/` and `/reload` (or restart the game).
+2. Join the raid: the addon silently asks the officer for your priority.
+3. When an item is announced, pick **Roll**, **MIN**, **NEED** or **MAX** in the window.
+4. Watch the list of bidders and the winner in the same window.
 
 ## What it does
 When the officer announces an item, a window opens with:
