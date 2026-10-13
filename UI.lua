@@ -45,14 +45,21 @@ local itemBtn = CreateFrame("Button", "SkullEPGPPlayerItem", f)
 itemBtn:SetWidth(W - 32)
 itemBtn:SetHeight(22)
 itemBtn:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -78)
-local itemIcon = itemBtn:CreateTexture(nil, "ARTWORK")
-itemIcon:SetWidth(40)
-itemIcon:SetHeight(40)
+local iconFrame = CreateFrame("Frame", nil, f)
+iconFrame:SetWidth(46)
+iconFrame:SetHeight(46)
+iconFrame:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true, tileSize = 16, edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+iconFrame:SetBackdropColor(0, 0, 0, 0.8)
+local itemIcon = iconFrame:CreateTexture(nil, "ARTWORK")
+itemIcon:SetWidth(38)
+itemIcon:SetHeight(38)
+itemIcon:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)
 itemIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-itemIcon:Hide()
+iconFrame:Hide()
 local itemText = Text(itemBtn, "", "GameFontNormal", W - 32, "CENTER")
 itemText:SetPoint("LEFT", itemBtn, "LEFT", 0, 0)
-itemIcon:SetPoint("BOTTOM", itemText, "TOP", 0, 3)
+iconFrame:SetPoint("BOTTOM", itemText, "TOP", 0, 2)
 local timer = Text(f, "", "GameFontNormal", 60, "RIGHT")
 timer:SetPoint("TOPRIGHT", f, "TOPRIGHT", -16, -98)
 itemBtn:SetScript("OnEnter", function()
@@ -179,21 +186,26 @@ end
 function UI:UpdateIcon()
 	local a = P.auction
 	local _, _, id = string.find((a and a.link) or "", "|Hitem:(%d+)")
-	local tex
+	local tex, quality
 	if id then
-		local _, _, _, _, _, _, _, _, t = GetItemInfo("item:" .. id .. ":0:0:0")
+		local _, _, q, _, _, _, _, _, t = GetItemInfo("item:" .. id .. ":0:0:0")
 		tex = t
+		quality = q
 	end
 	if tex then
 		itemIcon:SetTexture(tex)
-		itemIcon:Show()
+		-- border in the colour of the item quality (grey when unknown)
+		local c = quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
+		if c then iconFrame:SetBackdropBorderColor(c.r, c.g, c.b, 1) else iconFrame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1) end
+		iconFrame:Show()
 	elseif id then
 		itemIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-		itemIcon:Show()
+		iconFrame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+		iconFrame:Show()
 		self.iconPending = true
 		return
 	else
-		itemIcon:Hide()
+		iconFrame:Hide()
 	end
 	self.iconPending = nil
 end
@@ -228,7 +240,7 @@ function UI:Refresh()
 
 	if not a then
 		itemText:SetText("|cff888888No announcement|r")
-		itemIcon:Hide()
+		iconFrame:Hide()
 		timer:SetText("")
 		for i = 1, 4 do buttons[i]:Disable() end
 		status:SetText("")
