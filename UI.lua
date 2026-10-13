@@ -50,11 +50,11 @@ itemIcon:SetWidth(40)
 itemIcon:SetHeight(40)
 itemIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 itemIcon:Hide()
-local itemText = Text(itemBtn, "", "GameFontNormal", W - 32 - 54, "CENTER")
+local itemText = Text(itemBtn, "", "GameFontNormal", W - 32, "CENTER")
 itemText:SetPoint("LEFT", itemBtn, "LEFT", 0, 0)
 itemIcon:SetPoint("BOTTOM", itemText, "TOP", 0, 3)
-local timer = Text(itemBtn, "", "GameFontNormal", 50, "RIGHT")
-timer:SetPoint("RIGHT", itemBtn, "RIGHT", 0, 0)
+local timer = Text(f, "", "GameFontNormal", 60, "RIGHT")
+timer:SetPoint("TOPRIGHT", f, "TOPRIGHT", -16, -98)
 itemBtn:SetScript("OnEnter", function()
 	local a = P.auction
 	if not a then return end
@@ -68,7 +68,7 @@ end)
 itemBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 -- my priority
-local myPR = Text(f, "", "GameFontHighlightSmall", W - 32)
+local myPR = Text(f, "", "GameFontHighlightSmall", W - 32 - 64)
 myPR:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -100)
 
 -- buttons
