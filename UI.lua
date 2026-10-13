@@ -4,7 +4,7 @@ local UI = {}
 P.UI = UI
 
 local ROWS = 8
-local W, H = 300, 300
+local W, H = 300, 342
 local BID_COLOR = { MIN = "|cff33cc33", NEED = "|cffff8000", MAX = "|cffff3333", ROLL = "|cffcccccc" }
 
 local f = CreateFrame("Frame", "SkullEPGPPlayerFrame", UIParent)
@@ -44,15 +44,15 @@ close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -6)
 local itemBtn = CreateFrame("Button", "SkullEPGPPlayerItem", f)
 itemBtn:SetWidth(W - 32)
 itemBtn:SetHeight(22)
-itemBtn:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -34)
+itemBtn:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -78)
 local itemIcon = itemBtn:CreateTexture(nil, "ARTWORK")
-itemIcon:SetWidth(20)
-itemIcon:SetHeight(20)
-itemIcon:SetPoint("LEFT", itemBtn, "LEFT", 0, 0)
+itemIcon:SetWidth(40)
+itemIcon:SetHeight(40)
 itemIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 itemIcon:Hide()
-local itemText = Text(itemBtn, "", "GameFontNormal", W - 32 - 54 - 24)
-itemText:SetPoint("LEFT", itemBtn, "LEFT", 24, 0)
+local itemText = Text(itemBtn, "", "GameFontNormal", W - 32 - 54, "CENTER")
+itemText:SetPoint("LEFT", itemBtn, "LEFT", 0, 0)
+itemIcon:SetPoint("BOTTOM", itemText, "TOP", 0, 3)
 local timer = Text(itemBtn, "", "GameFontNormal", 50, "RIGHT")
 timer:SetPoint("RIGHT", itemBtn, "RIGHT", 0, 0)
 itemBtn:SetScript("OnEnter", function()
@@ -69,7 +69,7 @@ itemBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 -- my priority
 local myPR = Text(f, "", "GameFontHighlightSmall", W - 32)
-myPR:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -58)
+myPR:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -100)
 
 -- buttons
 local CHOICES = { "ROLL", "MIN", "NEED", "MAX" }
@@ -79,7 +79,7 @@ for i = 1, 4 do
 	local b = CreateFrame("Button", "SkullEPGPPlayerBtn" .. i, f, "UIPanelButtonTemplate")
 	b:SetWidth(64)
 	b:SetHeight(22)
-	b:SetPoint("TOPLEFT", f, "TOPLEFT", 16 + (i - 1) * 68, -76)
+	b:SetPoint("TOPLEFT", f, "TOPLEFT", 16 + (i - 1) * 68, -118)
 	b:SetScript("OnClick", function() P:Choose(choice) end)
 	b:SetScript("OnEnter", function()
 		GameTooltip:SetOwner(this, "ANCHOR_BOTTOM")
@@ -98,13 +98,13 @@ for i = 1, 4 do
 end
 
 local status = Text(f, "", "GameFontHighlightSmall", W - 32, "CENTER")
-status:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -102)
+status:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -144)
 
 -- list of bids
 local hdr = CreateFrame("Frame", nil, f)
 hdr:SetWidth(W - 32)
 hdr:SetHeight(14)
-hdr:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -120)
+hdr:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -162)
 local COLS = { rank = 2, name = 20, bid = 124, pr = 168, roll = 224 }
 local function hdrText(t, x)
 	local fs = Text(hdr, t, "GameFontNormalSmall")
@@ -117,7 +117,7 @@ for i = 1, ROWS do
 	local row = CreateFrame("Frame", nil, f)
 	row:SetWidth(W - 32)
 	row:SetHeight(15)
-	row:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -136 - (i - 1) * 15)
+	row:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -178 - (i - 1) * 15)
 	row.sel = row:CreateTexture(nil, "BACKGROUND")
 	row.sel:SetAllPoints(row)
 	row.sel:SetTexture(1, 0.82, 0, 0.18)
@@ -137,9 +137,9 @@ for i = 1, ROWS do
 end
 
 local empty = Text(f, "No bids yet.", "GameFontDisableSmall", W - 32, "CENTER")
-empty:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -140)
+empty:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -182)
 local more = Text(f, "", "GameFontDisableSmall", W - 32)
-more:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -136 - ROWS * 15)
+more:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -178 - ROWS * 15)
 local winners = Text(f, "", "GameFontNormalSmall", W - 32)
 winners:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 14)
 
@@ -187,7 +187,6 @@ function UI:UpdateIcon()
 	if tex then
 		itemIcon:SetTexture(tex)
 		itemIcon:Show()
-		itemText:SetPoint("LEFT", itemBtn, "LEFT", 24, 0)
 	elseif id then
 		itemIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 		itemIcon:Show()
