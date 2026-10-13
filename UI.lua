@@ -43,10 +43,16 @@ close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -6)
 -- item
 local itemBtn = CreateFrame("Button", "SkullEPGPPlayerItem", f)
 itemBtn:SetWidth(W - 32)
-itemBtn:SetHeight(20)
+itemBtn:SetHeight(22)
 itemBtn:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -34)
-local itemText = Text(itemBtn, "", "GameFontNormal", W - 32 - 54)
-itemText:SetPoint("LEFT", itemBtn, "LEFT", 0, 0)
+local itemIcon = itemBtn:CreateTexture(nil, "ARTWORK")
+itemIcon:SetWidth(20)
+itemIcon:SetHeight(20)
+itemIcon:SetPoint("LEFT", itemBtn, "LEFT", 0, 0)
+itemIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+itemIcon:Hide()
+local itemText = Text(itemBtn, "", "GameFontNormal", W - 32 - 54 - 24)
+itemText:SetPoint("LEFT", itemBtn, "LEFT", 24, 0)
 local timer = Text(itemBtn, "", "GameFontNormal", 50, "RIGHT")
 timer:SetPoint("RIGHT", itemBtn, "RIGHT", 0, 0)
 itemBtn:SetScript("OnEnter", function()
@@ -169,7 +175,32 @@ local function mmss(s)
 	return string.format("%d", math.ceil(s)) .. "s"
 end
 
+-- icon of the announced item (GetItemInfo only knows items already seen by this client: retried each second)
+function UI:UpdateIcon()
+	local a = P.auction
+	local _, _, id = string.find((a and a.link) or "", "|Hitem:(%d+)")
+	local tex
+	if id then
+		local _, _, _, _, _, _, _, _, t = GetItemInfo("item:" .. id .. ":0:0:0")
+		tex = t
+	end
+	if tex then
+		itemIcon:SetTexture(tex)
+		itemIcon:Show()
+		itemText:SetPoint("LEFT", itemBtn, "LEFT", 24, 0)
+	elseif id then
+		itemIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+		itemIcon:Show()
+		self.iconPending = true
+		return
+	else
+		itemIcon:Hide()
+	end
+	self.iconPending = nil
+end
+
 function UI:UpdateTimer()
+	if self.iconPending then self:UpdateIcon() end
 	local a = P.auction
 	if not a or not f:IsShown() then return end
 	if a.state == "open" then
@@ -198,6 +229,7 @@ function UI:Refresh()
 
 	if not a then
 		itemText:SetText("|cff888888No announcement|r")
+		itemIcon:Hide()
 		timer:SetText("")
 		for i = 1, 4 do buttons[i]:Disable() end
 		status:SetText("")
@@ -208,6 +240,7 @@ function UI:Refresh()
 
 	-- item
 	itemText:SetText(a.link .. ((a.count or 1) > 1 and ("  |cffffd700x" .. a.count .. "|r") or ""))
+	self:UpdateIcon()
 	self:UpdateTimer()
 
 	-- buttons
