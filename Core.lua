@@ -184,6 +184,7 @@ function P:HandleMessage(text, sender)
 		if table.getn(a.winners) >= (a.count or 1) then
 			a.state = "awarded"
 			a.closedAt = GetTime()
+			a.bids = {}                       -- last copy awarded: the list of bidders is cleared
 		end
 		if string.lower(f[3]) == string.lower(UnitName("player")) then
 			self:Print("|cff33cc33You won " .. a.link .. "!|r")

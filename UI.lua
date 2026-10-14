@@ -299,6 +299,7 @@ function UI:Refresh()
 			row:Hide()
 		end
 	end
+	empty:SetText(a.state == "awarded" and "" or "No bids yet.")
 	if table.getn(list) == 0 then empty:Show() else empty:Hide() end
 	if table.getn(list) > ROWS then more:SetText("+ " .. (table.getn(list) - ROWS) .. " more") else more:SetText("") end
 
