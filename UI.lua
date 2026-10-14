@@ -62,7 +62,7 @@ itemText:SetPoint("LEFT", itemBtn, "LEFT", 0, 0)
 iconFrame:SetPoint("BOTTOM", itemText, "TOP", 0, 2)
 local timer = Text(f, "", "GameFontNormal", 60, "RIGHT")
 timer:SetPoint("TOPRIGHT", f, "TOPRIGHT", -16, -98)
-itemBtn:SetScript("OnEnter", function()
+local function ShowItemTip()
 	local a = P.auction
 	if not a then return end
 	local _, _, str = string.find(a.link or "", "|H(item:[%d:%-]+)|h")
@@ -71,8 +71,13 @@ itemBtn:SetScript("OnEnter", function()
 		GameTooltip:SetHyperlink(str)
 		GameTooltip:Show()
 	end
-end)
-itemBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+local function HideItemTip() GameTooltip:Hide() end
+itemBtn:SetScript("OnEnter", ShowItemTip)
+itemBtn:SetScript("OnLeave", HideItemTip)
+iconFrame:EnableMouse(true)                 -- the tooltip also shows when hovering the icon
+iconFrame:SetScript("OnEnter", ShowItemTip)
+iconFrame:SetScript("OnLeave", HideItemTip)
 
 -- my priority
 local myPR = Text(f, "", "GameFontHighlightSmall", W - 32 - 64)
