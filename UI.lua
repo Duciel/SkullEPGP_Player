@@ -187,36 +187,42 @@ local function mmss(s)
 	return string.format("%d", math.ceil(s)) .. "s"
 end
 
--- icon of the announced item (GetItemInfo only knows items already seen by this client: retried each second)
+-- icon of the announced item. GetItemInfo is NOT free for an item this client has never seen (with some client
+-- mods it can ask the server), so it is called rarely: at most once every 3 s, 6 times per announcement,
+-- and the result is kept in the announcement itself.
 function UI:UpdateIcon()
 	local a = P.auction
-	local _, _, id = string.find((a and a.link) or "", "|Hitem:(%d+)")
-	local tex, quality
-	if id then
-		local _, _, q, _, _, _, _, _, t = GetItemInfo("item:" .. id .. ":0:0:0")
-		tex = t
-		quality = q
+	if not a then iconFrame:Hide(); self.iconPending = nil; return end
+	if not a.iconTex and not a.iconGiveUp then
+		local now = GetTime()
+		if not a.iconNext or now >= a.iconNext then
+			local _, _, id = string.find(a.link or "", "|Hitem:(%d+)")
+			a.iconTries = (a.iconTries or 0) + 1
+			a.iconNext = now + 3
+			if id then
+				local _, _, q, _, _, _, _, _, t = GetItemInfo("item:" .. id .. ":0:0:0")
+				if t then a.iconTex, a.iconQ = t, q end
+			end
+			if not a.iconTex and (a.iconTries >= 6 or not id) then a.iconGiveUp = true end
+		end
 	end
-	if tex then
-		itemIcon:SetTexture(tex)
-		-- border in the colour of the item quality (grey when unknown)
-		local c = quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
+	if a.iconTex then
+		itemIcon:SetTexture(a.iconTex)
+		local c = a.iconQ and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[a.iconQ]
 		if c then iconFrame:SetBackdropBorderColor(c.r, c.g, c.b, 1) else iconFrame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1) end
 		iconFrame:Show()
-	elseif id then
+		self.iconPending = nil
+	else
 		itemIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 		iconFrame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
 		iconFrame:Show()
-		self.iconPending = true
-		return
-	else
-		iconFrame:Hide()
+		self.iconPending = not a.iconGiveUp
 	end
-	self.iconPending = nil
 end
 
 function UI:UpdateTimer()
-	if self.iconPending then self:UpdateIcon() end
+	local pa = P.auction
+	if self.iconPending and pa and pa.iconNext and GetTime() >= pa.iconNext then self:UpdateIcon() end
 	local a = P.auction
 	if not a or not f:IsShown() then return end
 	if a.state == "open" then

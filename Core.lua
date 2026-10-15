@@ -64,7 +64,19 @@ end
 -------------------------------------------------------------------------------
 -- Who may send us announcements: the raid / party leader and the master looter
 -------------------------------------------------------------------------------
+-- cached for a few seconds: it scans the whole raid roster and runs for every message of the officer
+P.offCache = {}
 function P:IsOfficerName(name)
+	if not name then return false end
+	local key, now = string.lower(name), GetTime()
+	local c = self.offCache[key]
+	if c and now - c.t < 5 then return c.v end
+	local v = self:CheckOfficerName(name) and true or false
+	self.offCache[key] = { v = v, t = now }
+	return v
+end
+
+function P:CheckOfficerName(name)
 	if not name then return false end
 	name = string.lower(name)
 	local nraid = GetNumRaidMembers() or 0
@@ -303,6 +315,7 @@ function P:OnEvent(event, a1, a2, a3, a4)
 	elseif not self.db then
 		return
 	elseif event == "PLAYER_ENTERING_WORLD" or event == "RAID_ROSTER_UPDATE" or event == "PARTY_MEMBERS_CHANGED" then
+		self.offCache = {}                -- leader / master looter may have changed
 		local n = (GetNumRaidMembers() or 0) + (GetNumPartyMembers() or 0)
 		if n > 0 and not self.inGroup then self.db.noEntry = nil; self:Request() end      -- just joined a group: ask for my priority and the current item
 		self.inGroup = n > 0
