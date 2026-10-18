@@ -20,6 +20,10 @@ local DEFAULTS = {
 	autoClose = true,
 	cfg = { MIN = 5, NEED = 15, MAX = 45, baseGP = 0 },
 	me = nil,              -- { ep, gp } last known values of this character's main
+	filterMode = "off",    -- "off" | "black" (never open the window for the listed items) | "white" (only for the listed items)
+	lists = { black = {}, white = {} },     -- [key] = { id, name, link }
+	minimapAngle = 200,
+	minimapHidden = false,
 }
 
 function P:Print(msg)
@@ -59,6 +63,70 @@ function P:InitDB()
 	SkullEPGP_PlayerDB = SkullEPGP_PlayerDB or {}
 	self.db = SkullEPGP_PlayerDB
 	copyDefaults(self.db, DEFAULTS)
+end
+
+-------------------------------------------------------------------------------
+-- Item filter (blacklist / whitelist): decides if the window opens by itself for an announced item
+-------------------------------------------------------------------------------
+-- text = item link, item id, or item name  ->  key, id, name, link
+function P:ParseItem(text)
+	text = text or ""
+	local _, _, id = string.find(text, "Hitem:(%d+)")
+	local _, _, name = string.find(text, "%[(.-)%]")
+	local link = id and text or nil
+	if not id then
+		local _, _, num = string.find(text, "^%s*(%d+)%s*$")
+		if num then
+			id = num
+			local n, l = GetItemInfo(tonumber(id))
+			name = n
+			if n and l then link = l end
+		else
+			local _, _, nm = string.find(text, "^%s*(.-)%s*$")
+			name = nm
+		end
+	end
+	if id then return id, id, name, link end
+	if name and name ~= "" then return "n:" .. string.lower(name), nil, name, nil end
+end
+
+function P:InList(listName, link)
+	local list = self.db.lists[listName]
+	if not list then return false end
+	local key, id, name = self:ParseItem(link)
+	if not key then return false end
+	if id and list[id] then return true end
+	if name and list["n:" .. string.lower(name)] then return true end
+	return false
+end
+
+function P:AddToList(listName, text)
+	local list = self.db.lists[listName]
+	local key, id, name, link = self:ParseItem(text)
+	if not list or not key then return false end
+	list[key] = { id = id, name = name or ("item " .. tostring(id)), link = link }
+	return true, list[key]
+end
+
+function P:RemoveFromList(listName, key)
+	local list = self.db.lists[listName]
+	if list and list[key] then list[key] = nil; return true end
+	return false
+end
+
+-- sorted array of { key, entry } for display
+function P:ListEntries(listName)
+	local out = {}
+	for k, e in pairs(self.db.lists[listName] or {}) do table.insert(out, { key = k, e = e }) end
+	table.sort(out, function(a, b) return string.lower(a.e.name or "") < string.lower(b.e.name or "") end)
+	return out
+end
+
+function P:ShouldShow(link)
+	local mode = self.db.filterMode
+	if mode == "black" then return not self:InList("black", link) end
+	if mode == "white" then return self:InList("white", link) end
+	return true
 end
 
 -------------------------------------------------------------------------------
@@ -163,8 +231,15 @@ function P:HandleMessage(text, sender)
 			self.auction = { id = id, link = link, count = count or 1, endTime = GetTime() + secs, state = "open",
 				bids = {}, winners = {}, myChoice = nil, started = GetTime(), test = (sender == "test") }
 			self.pending = nil
-			if self.UI and self.db.autoShow then self.UI:ShowWindow() end
-			PlaySound("igQuestLogOpen")
+			local show = self:ShouldShow(link)
+			self.auction.filtered = not show
+			if not show then
+				if self.UI then self.UI:HideWindow() end
+				self:Print("Hidden by your item filter: " .. link .. " (type /epgpp to open it anyway)")
+			else
+				if self.UI and self.db.autoShow then self.UI:ShowWindow() end
+				PlaySound("igQuestLogOpen")
+			end
 			if not self.db.me and not self.db.noEntry then self:Request() end
 		end
 		if self.UI then self.UI:Refresh() end
@@ -312,6 +387,7 @@ function P:OnEvent(event, a1, a2, a3, a4)
 	if event == "VARIABLES_LOADED" then
 		self:InitDB()
 		if self.UI then self.UI:ApplySaved() end
+		if self.Minimap then self.Minimap:Apply() end
 	elseif not self.db then
 		return
 	elseif event == "PLAYER_ENTERING_WORLD" or event == "RAID_ROSTER_UPDATE" or event == "PARTY_MEMBERS_CHANGED" then
@@ -336,11 +412,39 @@ frame:SetScript("OnUpdate", function() P:OnUpdate(arg1) end)
 -------------------------------------------------------------------------------
 SLASH_SKULLEPGPP1 = "/epgpp"
 SLASH_SKULLEPGPP2 = "/skullepgpp"
-SlashCmdList["SKULLEPGPP"] = function(msg)
+SlashCmdList["SKULLEPGPP"] = function(raw)
 	if not P.db then return end
-	msg = string.lower(msg or "")
+	raw = raw or ""
+	local msg = string.lower(raw)
+	local _, _, listName, action, arg = string.find(raw, "^%s*(%a+)%s+(%a+)%s*(.-)%s*$")
+	listName = listName and string.lower(listName)
+	action = action and string.lower(action)
 	if msg == "" then
 		P.UI:Toggle()
+	elseif msg == "options" or msg == "config" or msg == "filter" then
+		P.Options:Toggle()
+	elseif msg == "filter off" or msg == "filter black" or msg == "filter white" then
+		P.db.filterMode = string.sub(msg, 8)
+		P:Print("Item filter: " .. P.db.filterMode)
+		if P.Options then P.Options:Refresh() end
+	elseif (listName == "black" or listName == "white") and (action == "add" or action == "remove" or action == "list") then
+		if action == "list" then
+			local n = 0
+			for _, it in ipairs(P:ListEntries(listName)) do n = n + 1; P:Print(listName .. ": " .. (it.e.link or it.e.name)) end
+			if n == 0 then P:Print(listName .. "list is empty.") end
+		elseif action == "add" then
+			local ok, e = P:AddToList(listName, arg)
+			if ok then P:Print("Added to the " .. listName .. "list: " .. (e.link or e.name)) else P:Print("Usage: /epgpp " .. listName .. " add [item link, item id or item name]") end
+		else
+			local key = P:ParseItem(arg)
+			if key and P:RemoveFromList(listName, key) then P:Print("Removed from the " .. listName .. "list: " .. arg)
+			else P:Print("Not in the " .. listName .. "list.") end
+		end
+		if P.Options then P.Options:Refresh() end
+	elseif msg == "minimap" then
+		P.db.minimapHidden = not P.db.minimapHidden
+		if P.Minimap then P.Minimap:Apply() end
+		P:Print("Minimap button: " .. (P.db.minimapHidden and "hidden" or "shown"))
 	elseif msg == "test" then
 		P:HandleMessage("CFG;5;15;45;10", "test")
 		P:HandleMessage("P;" .. UnitName("player") .. ",5726.24,6.52", "test")
@@ -359,6 +463,7 @@ SlashCmdList["SKULLEPGPP"] = function(msg)
 		P.lastReq = -100
 		P:Request()
 	else
-		P:Print("/epgpp - show / hide the window   |   /epgpp auto on|off   |   /epgpp reset   |   /epgpp req (ask the officer for your priority)   |   /epgpp test")
+		P:Print("/epgpp - show / hide the window   |   /epgpp options - item filter and settings   |   /epgpp auto on|off   |   /epgpp reset   |   /epgpp req   |   /epgpp test")
+		P:Print("Filter: /epgpp filter off|black|white   |   /epgpp black|white add|remove|list [item link]   |   /epgpp minimap")
 	end
 end

@@ -40,6 +40,21 @@ title:SetPoint("TOP", f, "TOP", 0, -14)
 local close = CreateFrame("Button", "SkullEPGPPlayerClose", f, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -6)
 
+-- opens the item filter settings
+local filterBtn = CreateFrame("Button", "SkullEPGPPlayerFilterBtn", f, "UIPanelButtonTemplate")
+filterBtn:SetWidth(54)
+filterBtn:SetHeight(18)
+filterBtn:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -14)
+filterBtn:SetText("Filter")
+filterBtn:SetScript("OnClick", function() if P.Options then P.Options:Toggle() end end)
+filterBtn:SetScript("OnEnter", function()
+	GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+	GameTooltip:SetText("Item filter")
+	GameTooltip:AddLine("Choose the items for which this window opens by itself (blacklist / whitelist).", 1, 1, 1, 1)
+	GameTooltip:Show()
+end)
+filterBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
 -- item
 local itemBtn = CreateFrame("Button", "SkullEPGPPlayerItem", f)
 itemBtn:SetWidth(W - 32)
