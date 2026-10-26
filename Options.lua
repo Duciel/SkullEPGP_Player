@@ -130,9 +130,11 @@ for i = 1, 3 do
 	c:SetPoint("TOPLEFT", f, "TOPLEFT", 18, -78 - (i - 1) * 24)
 	local label = Text(f, MODES[i][2], "GameFontNormalSmall", W - 80)
 	label:SetPoint("LEFT", c, "RIGHT", 4, 0)
+	c:SetID(i)          -- the index is read from the button itself: closures over a loop variable are unreliable in Lua 5.0
 	c:SetScript("OnClick", function()
-		P.db.filterMode = MODES[i][1]
-		if MODES[i][1] ~= "off" then O.view = MODES[i][1] end
+		local mode = MODES[this:GetID()][1]
+		P.db.filterMode = mode
+		if mode ~= "off" then O.view = mode end
 		O:Refresh()
 	end)
 	checks[i] = c

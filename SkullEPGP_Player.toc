@@ -2,7 +2,7 @@
 ## Title: Skull EPGP Player
 ## Notes: EPGP loot bidding window: shows announced items, your priority, the bids so far, and Roll / MIN / NEED / MAX buttons.
 ## Author: Duciel (Initial work from Xck)
-## Version: 1.2.0
+## Version: 1.2.1
 ## SavedVariablesPerCharacter: SkullEPGP_PlayerDB
 
 Core.lua
