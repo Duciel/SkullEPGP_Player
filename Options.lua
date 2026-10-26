@@ -134,23 +134,16 @@ for i = 1, 3 do
 	c:SetScript("OnClick", function()
 		local mode = MODES[this:GetID()][1]
 		P.db.filterMode = mode
-		if mode ~= "off" then O.view = mode end
 		O:Refresh()
 	end)
 	checks[i] = c
 end
 
 -- which list is displayed / edited
-local viewLabel = Text(f, "", "GameFontNormal", 190)
+local viewLabel = Text(f, "", "GameFontNormal", W - 44)
 viewLabel:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -160)
-local switch = CreateFrame("Button", "SkullEPGPPlayerSwitch", f, "UIPanelButtonTemplate")
-switch:SetWidth(110)
-switch:SetHeight(20)
-switch:SetPoint("TOPRIGHT", f, "TOPRIGHT", -20, -157)
-switch:SetScript("OnClick", function()
-	O.view = (O.view == "black") and "white" or "black"
-	O:Refresh()
-end)
+local offNote = Text(f, "The filter is off: the bidding window opens for every announced item. Choose Blacklist or Whitelist to edit a list.", "GameFontDisableSmall", W - 40)
+offNote:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -160)
 
 -- rows
 local rows = {}
@@ -279,11 +272,20 @@ end
 
 function O:Refresh()
 	if not P.db then return end
-	self.view = self.view or ((P.db.filterMode == "white") and "white" or "black")
-	for i = 1, 3 do checks[i]:SetChecked(P.db.filterMode == MODES[i][1] and 1 or nil) end
-	local isBlack = (self.view == "black")
-	viewLabel:SetText((isBlack and "|cffff6060Blacklist|r" or "|cff60ff60Whitelist|r") .. " (edited list)")
-	switch:SetText(isBlack and "Edit whitelist" or "Edit blacklist")
+	local mode = P.db.filterMode
+	for i = 1, 3 do checks[i]:SetChecked(mode == MODES[i][1] and 1 or nil) end
+	-- the edited list is the one of the chosen mode; with the filter off, the whole list area is hidden
+	if mode == "off" then
+		offNote:Show()
+		viewLabel:Hide(); empty:Hide(); up:Hide(); down:Hide(); addHelp:Hide(); box:Hide(); add:Hide(); cur:Hide()
+		for i = 1, ROWS do rows[i].key = nil; rows[i].link = nil; rows[i]:Hide() end
+		return
+	end
+	offNote:Hide()
+	viewLabel:Show(); up:Show(); down:Show(); addHelp:Show(); box:Show(); add:Show()
+	self.view = mode
+	local isBlack = (mode == "black")
+	viewLabel:SetText(isBlack and "|cffff6060Blacklist|r - no window for these items" or "|cff60ff60Whitelist|r - window only for these items")
 	local a = P.auction
 	if a and a.link then
 		local tex = a.iconTex      -- cached by the bidding window (no GetItemInfo call here)
