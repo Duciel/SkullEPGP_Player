@@ -36,7 +36,7 @@ A minimap button opens the settings (click), the bidding window is toggled with 
 - **Blacklist**: the window does NOT open by itself for the items of the blacklist.
 - **Whitelist**: the window opens ONLY for the items of the whitelist.
 
-Add items by shift-clicking them (bag or chat link) into the box, by typing their name or id, with the "Add the last announced item" button, or with `/epgpp black add [item]`. A filtered item is never lost: it still appears in the chat ("Hidden by your item filter") and `/epgpp` opens the window for it. The "Filter" button of the bidding window opens the same settings.
+Add items by shift-clicking them (bag or chat link) into the box, by typing their name or id, with the "Add" button next to the last announced item (shown at the bottom once an item has been announced), or with `/epgpp black add [item]`. A filtered item is never lost: it still appears in the chat ("Hidden by your item filter") and `/epgpp` opens the window for it. The "Filter" button of the bidding window opens the same settings.
 
 ## Commands
 `/epgpp` show / hide the window - `/epgpp auto on|off` open it automatically (default on) - `/epgpp reset` reset its position - `/epgpp req` ask the officer for your priority - `/epgpp options` item filter - `/epgpp filter off|black|white` - `/epgpp black|white add|remove|list [item]` - `/epgpp minimap` show / hide the minimap button - `/epgpp test` show a fake announcement to check the layout (nothing is sent to the raid).

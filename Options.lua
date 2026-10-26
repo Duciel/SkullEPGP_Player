@@ -219,17 +219,40 @@ add:SetPoint("LEFT", box, "RIGHT", 6, 0)
 add:SetText("Add")
 add:SetScript("OnClick", DoAdd)
 
-local cur = CreateFrame("Button", "SkullEPGPPlayerAddCurrent", f, "UIPanelButtonTemplate")
+-- last announced item: icon + name + "Add" button (only shown once an item has been announced)
+local cur = CreateFrame("Frame", "SkullEPGPPlayerLastItem", f)
 cur:SetWidth(W - 56)
-cur:SetHeight(22)
+cur:SetHeight(26)
 cur:SetPoint("TOPLEFT", f, "TOPLEFT", 28, -184 - ROWS * 21 - 62)
-cur:SetScript("OnClick", function()
+cur:EnableMouse(true)
+local curIcon = cur:CreateTexture(nil, "ARTWORK")
+curIcon:SetWidth(24)
+curIcon:SetHeight(24)
+curIcon:SetPoint("LEFT", cur, "LEFT", 0, 0)
+curIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+local curText = Text(cur, "", "GameFontNormalSmall", W - 56 - 24 - 74)
+curText:SetPoint("LEFT", curIcon, "RIGHT", 6, 0)
+local curAdd = CreateFrame("Button", "SkullEPGPPlayerAddCurrent", cur, "UIPanelButtonTemplate")
+curAdd:SetWidth(64)
+curAdd:SetHeight(22)
+curAdd:SetPoint("RIGHT", cur, "RIGHT", 0, 0)
+curAdd:SetText("Add")
+curAdd:SetScript("OnClick", function()
 	local a = P.auction
-	if not a or not a.link then P:Print("No item announced yet."); return end
-	local ok, e = P:AddToList(O.view, a.link)
+	if not a or not a.link then return end
+	local ok = P:AddToList(O.view, a.link)
 	if ok then P:Print("Added to the " .. O.view .. "list: " .. a.link) end
 	O:Refresh()
 end)
+cur:SetScript("OnEnter", function()
+	local a = P.auction
+	if a and a.link then
+		local _, _, str = string.find(a.link, "(item:%d+:%d+:%d+:%d+)")
+		if str then GameTooltip:SetOwner(cur, "ANCHOR_RIGHT"); GameTooltip:SetHyperlink(str); GameTooltip:Show() end
+	end
+end)
+cur:SetScript("OnLeave", function() GameTooltip:Hide() end)
+cur:Hide()
 
 -- shift-click on an item while the box has the keyboard focus: put the item in the box
 local function BoxHasFocus() return GetCurrentKeyBoardFocus and GetCurrentKeyBoardFocus() == box end
@@ -261,7 +284,16 @@ function O:Refresh()
 	local isBlack = (self.view == "black")
 	viewLabel:SetText((isBlack and "|cffff6060Blacklist|r" or "|cff60ff60Whitelist|r") .. " (edited list)")
 	switch:SetText(isBlack and "Edit whitelist" or "Edit blacklist")
-	cur:SetText("Add the last announced item to the " .. (isBlack and "blacklist" or "whitelist"))
+	local a = P.auction
+	if a and a.link then
+		local tex = a.iconTex      -- cached by the bidding window (no GetItemInfo call here)
+		curIcon:SetTexture(tex or "Interface\\Icons\\INV_Misc_QuestionMark")
+		curText:SetText(a.link)
+		if P:InList(self.view, a.link) then curAdd:Disable() else curAdd:Enable() end
+		cur:Show()
+	else
+		cur:Hide()
+	end
 	local list = P:ListEntries(self.view)
 	local n = table.getn(list)
 	local maxOff = math.max(0, n - ROWS)
@@ -282,6 +314,8 @@ function O:Refresh()
 	end
 	if n == 0 then empty:Show() else empty:Hide() end
 end
+
+function O:IsShown() return f:IsShown() end
 
 function O:Toggle()
 	if f:IsShown() then f:Hide() else f:Show(); self:Refresh() end

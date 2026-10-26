@@ -216,7 +216,7 @@ function UI:UpdateIcon()
 			a.iconNext = now + 3
 			if id then
 				local _, _, q, _, _, _, _, _, t = GetItemInfo("item:" .. id .. ":0:0:0")
-				if t then a.iconTex, a.iconQ = t, q end
+				if t then a.iconTex, a.iconQ = t, q; if P.Options and P.Options:IsShown() then P.Options:Refresh() end end
 			end
 			if not a.iconTex and (a.iconTries >= 6 or not id) then a.iconGiveUp = true end
 		end

@@ -243,6 +243,7 @@ function P:HandleMessage(text, sender)
 			if not self.db.me and not self.db.noEntry then self:Request() end
 		end
 		if self.UI then self.UI:Refresh() end
+		if self.Options and self.Options:IsShown() then self.Options:Refresh() end
 	elseif tag == "BID" then
 		local a = self.auction
 		local id = tonumber(f[2])
