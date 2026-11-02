@@ -6,6 +6,7 @@
 --   END;<id>    bidding closed        CAN;<id>   cancelled
 --   WIN;<id>;<char>;<tier>;<cost>               item awarded
 --   P;<Main/Alt>,<ep>,<gp>;...                   priorities       CFG;<MIN>;<NEED>;<MAX>;<baseGP>   prices
+--   LL;<n>   start of the list of items to distribute (n items follow)     LI;<itemId>;<copies>;<link>   one item of that list
 -- Player -> officer: "REQ" (asks for my priority, prices and the current announcement); the officer answers "NP" when I am not in the list
 SkullEPGPP = {}
 local P = SkullEPGPP
@@ -14,6 +15,10 @@ P.TIERS = { ROLL = 1, MIN = 2, NEED = 3, MAX = 4 }
 P.auction = nil
 P.pending = nil            -- { choice, t } : a choice was sent, waiting for the officer's confirmation
 P.lastReq = -100
+P.loot = {}             -- items the officer still has to distribute: { id, count, link } (shared by the officer)
+P.lootExpect = 0
+P.prebid = {}           -- [itemId] = ROLL|MIN|NEED|MAX : answer sent automatically when the item is announced
+P.history = {}          -- won items of this session (not saved): { link, char, bid }
 
 local DEFAULTS = {
 	autoShow = true,
@@ -130,6 +135,44 @@ function P:ShouldShow(link)
 end
 
 -------------------------------------------------------------------------------
+-- Pending loot (shared by the officer) and pre-bids
+-------------------------------------------------------------------------------
+function P:ItemId(link)
+	local _, _, id = string.find(link or "", "Hitem:(%d+)")
+	return id
+end
+
+-- pending items that pass the blacklist / whitelist
+function P:VisibleLoot()
+	local out = {}
+	for _, it in ipairs(self.loot) do
+		if self:ShouldShow(it.link) then table.insert(out, it) end
+	end
+	return out
+end
+
+-- forgets the pre-bids of items that are no longer in the officer's list
+function P:PrunePrebids()
+	local have = {}
+	for _, it in ipairs(self.loot) do have[it.id] = true end
+	for id in pairs(self.prebid) do
+		if not have[id] then self.prebid[id] = nil end
+	end
+end
+
+-- click on a pre-bid button: select it, click again to clear it
+function P:TogglePrebid(id, choice)
+	if self.prebid[id] == choice then self.prebid[id] = nil else self.prebid[id] = choice end
+	if self.Loot then self.Loot:Refresh() end
+end
+
+function P:AddHistory(link, char, bid)
+	table.insert(self.history, 1, { link = link, char = char, bid = bid })
+	if table.getn(self.history) > 200 then table.remove(self.history) end
+	if self.Loot then self.Loot:Refresh() end
+end
+
+-------------------------------------------------------------------------------
 -- Who may send us announcements: the raid / party leader and the master looter
 -------------------------------------------------------------------------------
 -- cached for a few seconds: it scans the whole raid roster and runs for every message of the officer
@@ -219,6 +262,19 @@ function P:HandleMessage(text, sender)
 			self.db.cfg.baseGP = base or 0
 			if self.UI then self.UI:Refresh() end
 		end
+	elseif tag == "LL" then
+		self.loot = {}
+		self.lootExpect = tonumber(f[2]) or 0
+		if self.lootExpect == 0 then self:PrunePrebids() end
+		if self.Loot then self.Loot:Refresh() end
+	elseif tag == "LI" then
+		local id, count = f[2], tonumber(f[3])
+		local link = table.concat(f, ";", 4)
+		if id and count and link ~= "" then
+			table.insert(self.loot, { id = id, count = count, link = link })
+			if table.getn(self.loot) >= self.lootExpect then self:PrunePrebids() end
+			if self.Loot then self.Loot:Refresh() end
+		end
 	elseif tag == "AUC" then
 		local id, secs, count = tonumber(f[2]), tonumber(f[3]), tonumber(f[4])
 		if not id or not secs then return end
@@ -239,6 +295,11 @@ function P:HandleMessage(text, sender)
 			else
 				if self.UI and self.db.autoShow then self.UI:ShowWindow() end
 				PlaySound("igQuestLogOpen")
+				-- pre-bid chosen in the pending loot list: sent now
+				local pre = self.prebid[self:ItemId(link) or ""]
+				if pre and not self.auction.test and self:Choose(pre) then
+					self:Print("Pre-bid sent: |cffffd700" .. pre .. "|r on " .. link)
+				end
 			end
 			if not self.db.me and not self.db.noEntry then self:Request() end
 		end
@@ -268,6 +329,12 @@ function P:HandleMessage(text, sender)
 		local a = self.auction
 		if not a or a.id ~= tonumber(f[2]) or not f[3] then return end
 		table.insert(a.winners, { char = f[3], bid = f[4], cost = tonumber(f[5]) or 0 })
+		if not a.test then
+			local b = a.bids[string.lower(f[3])]
+			local what = f[4] or "?"
+			if what == "ROLL" then what = "Roll " .. tostring((b and b.roll) or "?") end
+			self:AddHistory(a.link, f[3], what)
+		end
 		a.bids[string.lower(f[3])] = nil
 		if table.getn(a.winners) >= (a.count or 1) then
 			a.state = "awarded"
@@ -276,6 +343,8 @@ function P:HandleMessage(text, sender)
 		end
 		if string.lower(f[3]) == string.lower(UnitName("player")) then
 			self:Print("|cff33cc33You won " .. a.link .. "!|r")
+			local wid = self:ItemId(a.link)
+			if wid and self.prebid[wid] then self.prebid[wid] = nil; if self.Loot then self.Loot:Refresh() end end   -- no automatic bid on the next copy
 		end
 		if self.UI then self.UI:Refresh() end
 	end
@@ -396,7 +465,11 @@ function P:OnEvent(event, a1, a2, a3, a4)
 		local n = (GetNumRaidMembers() or 0) + (GetNumPartyMembers() or 0)
 		if n > 0 and not self.inGroup then self.db.noEntry = nil; self:Request() end      -- just joined a group: ask for my priority and the current item
 		self.inGroup = n > 0
-		if n == 0 then self.auction = nil; if self.UI then self.UI:HideWindow() end end
+		if n == 0 then
+			self.auction = nil; self.loot = {}; self.lootExpect = 0; self.prebid = {}
+			if self.UI then self.UI:HideWindow() end
+			if self.Loot then self.Loot:Refresh() end
+		end
 	elseif event == "CHAT_MSG_ADDON" then
 		self:OnAddonMessage(a1, a2, a3, a4)
 	end
@@ -422,6 +495,10 @@ SlashCmdList["SKULLEPGPP"] = function(raw)
 	action = action and string.lower(action)
 	if msg == "" then
 		P.UI:Toggle()
+	elseif msg == "loot" or msg == "pending" then
+		P.Loot:Show("pending")
+	elseif msg == "history" then
+		P.Loot:Show("history")
 	elseif msg == "options" or msg == "config" or msg == "filter" then
 		P.Options:Toggle()
 	elseif msg == "filter off" or msg == "filter black" or msg == "filter white" then
@@ -464,7 +541,7 @@ SlashCmdList["SKULLEPGPP"] = function(raw)
 		P.lastReq = -100
 		P:Request()
 	else
-		P:Print("/epgpp - show / hide the window   |   /epgpp options - item filter and settings   |   /epgpp auto on|off   |   /epgpp reset   |   /epgpp req   |   /epgpp test")
+		P:Print("/epgpp - show / hide the window   |   /epgpp loot - pending items and pre-bids   |   /epgpp history - items won   |   /epgpp options - item filter and settings   |   /epgpp auto on|off   |   /epgpp reset   |   /epgpp req   |   /epgpp test")
 		P:Print("Filter: /epgpp filter off|black|white   |   /epgpp black|white add|remove|list [item link]   |   /epgpp minimap")
 	end
 end

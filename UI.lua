@@ -55,6 +55,26 @@ filterBtn:SetScript("OnEnter", function()
 end)
 filterBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
+-- pending items / loot history
+local function SmallButton(name, text, y, tip, onClick)
+	local b = CreateFrame("Button", name, f, "UIPanelButtonTemplate")
+	b:SetWidth(54)
+	b:SetHeight(18)
+	b:SetPoint("TOPLEFT", f, "TOPLEFT", 16, y)
+	b:SetText(text)
+	b:SetScript("OnClick", onClick)
+	b:SetScript("OnEnter", function()
+		GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+		GameTooltip:SetText(text)
+		GameTooltip:AddLine(tip, 1, 1, 1, 1)
+		GameTooltip:Show()
+	end)
+	b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	return b
+end
+SmallButton("SkullEPGPPlayerPendingBtn", "Pending", -34, "Items the officer still has to distribute, with buttons to pre-bid on them.", function() if P.Loot then P.Loot:Toggle("pending") end end)
+SmallButton("SkullEPGPPlayerHistoryBtn", "History", -54, "Items won during this session: item, winner and bid / roll.", function() if P.Loot then P.Loot:Toggle("history") end end)
+
 -- item
 local itemBtn = CreateFrame("Button", "SkullEPGPPlayerItem", f)
 itemBtn:SetWidth(W - 32)
