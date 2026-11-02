@@ -151,6 +151,18 @@ function P:VisibleLoot()
 	return out
 end
 
+-- what the pending panel shows: the visible items, except the one being announced right now
+-- (it is in the current bid window)
+function P:PendingList()
+	local a = self.auction
+	local cur = (a and a.state == "open") and self:ItemId(a.link) or nil
+	local out = {}
+	for _, it in ipairs(self:VisibleLoot()) do
+		if it.id ~= cur then table.insert(out, it) end
+	end
+	return out
+end
+
 -- forgets the pre-bids of items that are no longer in the officer's list
 function P:PrunePrebids()
 	local have = {}

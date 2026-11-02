@@ -81,7 +81,7 @@ end
 local pmore = Text(pf, "", "GameFontDisableSmall", PW - 36, "RIGHT")
 
 function L:RefreshPending()
-	local list = P:VisibleLoot()
+	local list = P:PendingList()
 	local n = table.getn(list)
 	if n == 0 then pf:Hide(); return end
 	local shown = math.min(n, PROWS)
