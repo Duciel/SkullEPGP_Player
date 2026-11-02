@@ -31,11 +31,11 @@ Copy the `SkullEPGP_Player` folder into `Interface/AddOns/`. Nothing to configur
 Your priority and the prices are sent by the officer (`/epgp publish`, or automatically when you join the group: the addon asks for them). Only messages from the raid leader / assistants / master looter are accepted. If you have no priority yet (officer import done before you connected), the addon silently asks again every 30 s while you are in a group; if you are not in the EPGP list, the window says so and stops asking.
 
 ## Pending loot, pre-bids and history
-The officer addon shares the list of the items dropped by the bosses (it is updated when items are taken, awarded or removed from the officer's list). Open it with the **Pending** button of the bidding window (or `/epgpp loot`):
+The officer addon shares the list of the items dropped by the bosses (it is updated when items are taken, awarded or removed from the officer's list). It hangs under the bidding window (open the window with `/epgpp`, `/epgpp loot` or a right-click on the minimap button; the panel only appears when there is something to distribute):
 - each item has **Roll / Min / Need / Max** buttons: pick one and your answer is sent **automatically** the moment the item is announced; click it again to cancel. A pre-bid is forgotten when you win that item, when the item leaves the officer's list, or when you leave the group.
 - the list **respects your item filter** (blacklist / whitelist): hidden items are not shown and never get an automatic bid.
 
-The **History** button (or `/epgpp history`) lists the items won during this session: item, winner and bid (MIN / NEED / MAX) or roll. It is kept in memory only: it is cleared by a reload or a disconnection.
+The **History** button next to the close button of the bidding window (or `/epgpp history`) lists the items won during this session: item, winner and bid (MIN / NEED / MAX) or roll. It is kept in memory only: it is cleared by a reload or a disconnection.
 
 ## Item filter (blacklist / whitelist)
 A minimap button opens the settings (click), the bidding window is toggled with a right-click. Open the settings before the raid and pick a mode:
