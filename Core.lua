@@ -160,9 +160,33 @@ function P:PrunePrebids()
 	end
 end
 
--- click on a pre-bid button: select it, click again to clear it
+-- Is the answer for this item already sent (or waiting for the officer's confirmation) in the open announcement?
+-- Then the pre-bid can no longer be changed. Returns the choice that was sent.
+function P:SentChoice(id)
+	local a = self.auction
+	if not a or a.state ~= "open" or self:ItemId(a.link) ~= id then return nil end
+	if a.myChoice then return a.myChoice end
+	if self.pending then return self.pending.choice end
+	return nil
+end
+
+-- click on a pre-bid button: select it, click again to clear it.
+-- Changeable until the bid is sent. If the item is being announced right now and nothing was sent yet,
+-- the new choice is sent immediately (it is the answer to that announcement).
 function P:TogglePrebid(id, choice)
-	if self.prebid[id] == choice then self.prebid[id] = nil else self.prebid[id] = choice end
+	if self:SentChoice(id) then
+		self:Print("Your bid on this item is already sent.")
+		return
+	end
+	if self.prebid[id] == choice then
+		self.prebid[id] = nil
+	else
+		self.prebid[id] = choice
+		local a = self.auction
+		if a and a.state == "open" and not a.test and self:ItemId(a.link) == id then
+			if self:Choose(choice) then self:Print("Bid sent: |cffffd700" .. choice .. "|r on " .. a.link) end
+		end
+	end
 	if self.Loot then self.Loot:Refresh() end
 end
 

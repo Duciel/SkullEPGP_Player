@@ -92,10 +92,13 @@ function L:RefreshPending()
 			row.item = it
 			row.icon:SetTexture(P.iconCache[it.id] or "Interface\\Icons\\INV_Misc_QuestionMark")
 			row.text:SetText(it.link .. ((it.count or 1) > 1 and (" |cffffd700x" .. it.count .. "|r") or ""))
-			local sel = P.prebid[it.id]
+			local sent = P:SentChoice(it.id)
+			local sel = sent or P.prebid[it.id]
+			if sent then row.text:SetText(row.text:GetText() .. " |cff888888sent|r") end
 			for k = 1, 4 do
 				if sel == PRE[k][1] then row.btn[k]:LockHighlight() else row.btn[k]:UnlockHighlight() end
 				row.btn[k]:SetText((sel == PRE[k][1] and COLOR[PRE[k][1]] or "") .. PRE[k][2])
+				if sent then row.btn[k]:Disable() else row.btn[k]:Enable() end
 			end
 			row:Show()
 		else
@@ -245,4 +248,11 @@ function L:Show(view)
 		P.UI:ShowWindow()
 		self:RefreshPending()
 	end
+end
+
+-- the lock follows the announcement: refresh the panel whenever the bidding window refreshes
+local oldRefresh = P.UI.Refresh
+P.UI.Refresh = function(self)
+	oldRefresh(self)
+	L:RefreshPending()
 end
