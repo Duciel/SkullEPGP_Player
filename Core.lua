@@ -423,19 +423,6 @@ function P:Choose(choice)
 		local ok = pcall(RandomRoll, 1, 100)
 		if not ok then self:Print("Could not roll: type /roll in the chat.") return false end
 	else
-		-- the one running the auction (officer addon active on this character): the bid goes straight to the
-		-- officer addon, no chat message (this player is the one most likely to be muted for chat flooding)
-		local O = SkullEPGP
-		if O and O.RegisterBid and O.auction and O.auction.state == "open" and O.Active and O:Active() then
-			if not O:RegisterBid(UnitName("player"), choice) then
-				self:Print("The officer addon did not accept this bid (see its message).")
-				return false
-			end
-			self.auction.myChoice = choice
-			self.pending = nil
-			if self.UI then self.UI:Refresh() end
-			return true
-		end
 		local ch = self:Channel()
 		if not ch then self:Print("You are not in a group.") return false end
 		SendChatMessage(choice, ch)
