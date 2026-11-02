@@ -30,6 +30,9 @@ When the officer awards the item, the winner is shown in the window (and "You wo
 Copy the `SkullEPGP_Player` folder into `Interface/AddOns/`. Nothing to configure.
 Your priority and the prices are sent by the officer (`/epgp publish`, or automatically when you join the group: the addon asks for them). Only messages from the raid leader / assistants / master looter are accepted. If you have no priority yet (officer import done before you connected), the addon silently asks again every 30 s while you are in a group; if you are not in the EPGP list, the window says so and stops asking.
 
+## On the officer / master looter's character
+If the officer addon is active on the same character, the Min / Need / Max buttons (and pre-bids) send the bid **directly to the officer addon instead of typing it in the chat**: no chat message, so no risk of being muted for flooding while announcing items. A Roll still uses the normal /roll.
+
 ## Pending loot, pre-bids and history
 The officer addon shares the list of the items dropped by the bosses (it is updated when items are taken, awarded or removed from the officer's list). It hangs under the bidding window (open the window with `/epgpp`, `/epgpp loot` or a right-click on the minimap button; the panel only appears when there is something to distribute):
 - each item has **Roll / Min / Need / Max** buttons: pick one and your answer is sent **automatically** the moment the item is announced; click it again to cancel. You can change it as often as you want until the item is announced. As soon as it is announced it leaves this list (it is now in the bidding window above, with your pre-bid already sent) and comes back afterwards only if the officer still holds other copies. A pre-bid is forgotten when you win that item, when the item leaves the officer's list, or when you leave the group.
